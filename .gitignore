@@ -1,0 +1,32 @@
+# Secrets: never commit keys or env files
+.env
+.env.*
+*.key
+*.pem
+*.keystore
+*.jks
+local.properties
+
+# Node / Expo
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Android / Gradle
+.gradle/
+build/
+.idea/
+*.apk
+*.aab
+*.aar
+
+# Go
+*.exe
+*.test
+*.out
+bin/
+
+# OS
+.DS_Store
+Thumbs.db
