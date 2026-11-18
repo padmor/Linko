@@ -27,15 +27,6 @@ jobs:
           go-version-file: ${{ matrix.module }}/go.mod
           cache: false
 
-      - name: Generate and display module checksums
-        working-directory: ${{ matrix.module }}
-        run: |
-          go mod tidy
-          echo "--- go.mod ---"
-          cat go.mod
-          echo "--- go.sum ---"
-          if [ -f go.sum ]; then cat go.sum; else echo "(no external module checksums)"; fi
-
       - name: Run tests with race detector
         working-directory: ${{ matrix.module }}
         run: go test -race ./...
