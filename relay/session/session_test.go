@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/padmor/linko/relay/envelope"
+	"github.com/padmor/linko/protocol/envelope"
 )
 
 const idle = 120 * time.Second

@@ -78,11 +78,19 @@ func (c Config) uapi() string {
 	return b.String()
 }
 
-// Up starts a WireGuard device on top of tdev and applies cfg.
-// Errors only are logged, and never keys or packets.
+// Up starts a WireGuard device on top of tdev with the platform's default Bind.
 func Up(tdev tun.Device, cfg Config, name string) (*device.Device, error) {
+	return UpWithBind(tdev, cfg, name, conn.NewDefaultBind())
+}
+
+// UpWithBind starts a WireGuard device with an injected transport Bind.
+// This is used by Linko to route WireGuard packets through its relay.
+func UpWithBind(tdev tun.Device, cfg Config, name string, bind conn.Bind) (*device.Device, error) {
+	if bind == nil {
+		return nil, fmt.Errorf("tunnel: %s has no network bind", name)
+	}
 	logger := device.NewLogger(device.LogLevelError, name+" ")
-	dev := device.NewDevice(tdev, conn.NewDefaultBind(), logger)
+	dev := device.NewDevice(tdev, bind, logger)
 	if err := dev.IpcSet(cfg.uapi()); err != nil {
 		dev.Close()
 		return nil, fmt.Errorf("tunnel: configure %s: %w", name, err)

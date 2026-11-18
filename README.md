@@ -8,6 +8,7 @@ Phone B sends encrypted traffic through a relay to Phone A, which opens the real
 
 | Folder | Contents |
 | --- | --- |
+| `protocol/` | Shared packet envelope used by core and relay |
 | `relay/` | Go relay and control API |
 | `core/` | Go engine: WireGuard, gateway, client, transport |
 | `android/` | Kotlin: VpnService, foreground service, Keystore, native module |

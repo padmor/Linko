@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/padmor/linko/relay/envelope"
+	"github.com/padmor/linko/protocol/envelope"
 )
 
 // Errors returned by Add.

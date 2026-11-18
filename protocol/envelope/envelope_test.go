@@ -44,10 +44,9 @@ func TestRoundTrip(t *testing.T) {
 	}
 }
 
-// The header size must match the MTU math in the roadmap (1500-40-8-18-32).
 func TestHeaderSize(t *testing.T) {
 	if HeaderSize != 18 {
-		t.Fatalf("HeaderSize = %d, the MTU math assumes 18", HeaderSize)
+		t.Fatalf("HeaderSize = %d, want 18", HeaderSize)
 	}
 }
 
@@ -102,7 +101,6 @@ func TestMarshalRejects(t *testing.T) {
 	}
 }
 
-// Marshal appends, so a reused buffer must not be disturbed before its length.
 func TestMarshalAppends(t *testing.T) {
 	id := testID(t)
 	prefix := []byte("keep")
@@ -121,8 +119,6 @@ func TestSessionIDsDiffer(t *testing.T) {
 	}
 }
 
-// FuzzParse feeds arbitrary bytes: Parse must never panic, and anything it
-// accepts must encode back to the same bytes.
 func FuzzParse(f *testing.F) {
 	id, _ := NewSessionID()
 	seed, _ := Marshal(nil, Packet{TypeData, id, []byte("x")})
