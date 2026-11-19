@@ -10,8 +10,10 @@ package gateway
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
+	"net/netip"
 	"strconv"
 	"sync"
 	"time"
@@ -39,21 +41,36 @@ const (
 
 // Gateway forwards tunnel traffic to the real network.
 type Gateway struct {
-	stack  *stack.Stack
-	dialer net.Dialer
-	ctx    context.Context
-	cancel context.CancelFunc
-	wg     sync.WaitGroup
+	stack            *stack.Stack
+	dialer           net.Dialer
+	ctx              context.Context
+	cancel           context.CancelFunc
+	wg               sync.WaitGroup
+	proofDestination netip.Addr
 }
 
 // New wires the forwarders into s. Call Close to stop all flows.
 func New(s *stack.Stack) (*Gateway, error) {
+	return newGateway(s, netip.Addr{})
+}
+
+// NewForProof permits one explicitly supplied private IPv4 address for the
+// local performance-proof server. It must never be used by a running gateway.
+func NewForProof(s *stack.Stack, allowedDestination netip.Addr) (*Gateway, error) {
+	if !allowedDestination.Is4() || !allowedDestination.IsPrivate() {
+		return nil, fmt.Errorf("gateway: proof destination must be a private IPv4 address")
+	}
+	return newGateway(s, allowedDestination)
+}
+
+func newGateway(s *stack.Stack, proofDestination netip.Addr) (*Gateway, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	g := &Gateway{
-		stack:  s,
-		dialer: net.Dialer{Timeout: dialTimeout},
-		ctx:    ctx,
-		cancel: cancel,
+		stack:            s,
+		dialer:           net.Dialer{Timeout: dialTimeout},
+		ctx:              ctx,
+		cancel:           cancel,
+		proofDestination: proofDestination,
 	}
 
 	// Accept packets for any destination and answer as that destination.
@@ -81,6 +98,20 @@ func (g *Gateway) Close() {
 	g.wg.Wait()
 }
 
+// checkDestination applies the normal policy, except for the exact private
+// host explicitly allowed by the local proof harness.
+func (g *Gateway) checkDestination(value string) error {
+	addr, err := netip.ParseAddr(value)
+	if err != nil {
+		return fmt.Errorf("invalid destination address %q: %w", value, err)
+	}
+	addr = addr.Unmap()
+	if g.proofDestination.IsValid() && addr == g.proofDestination {
+		return nil
+	}
+	return validateDestination(addr)
+}
+
 // destination returns the "ip:port" the client was trying to reach.
 func destination(id stack.TransportEndpointID) string {
 	return net.JoinHostPort(id.LocalAddress.String(), strconv.Itoa(int(id.LocalPort)))
@@ -97,7 +128,7 @@ func (g *Gateway) onTCP(req *tcp.ForwarderRequest) {
 
 func (g *Gateway) serveTCP(req *tcp.ForwarderRequest) {
 	// Reject private and special-use destinations before opening a real socket.
-	if err := validateDestinationString(req.ID().LocalAddress.String()); err != nil {
+	if err := g.checkDestination(req.ID().LocalAddress.String()); err != nil {
 		req.Complete(true)
 		return
 	}
@@ -166,7 +197,7 @@ func (g *Gateway) onUDP(req *udp.ForwarderRequest) {
 
 func (g *Gateway) serveUDP(req *udp.ForwarderRequest) {
 	// Apply the same policy as TCP before opening a real socket.
-	if err := validateDestinationString(req.ID().LocalAddress.String()); err != nil {
+	if err := g.checkDestination(req.ID().LocalAddress.String()); err != nil {
 		return
 	}
 
