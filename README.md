@@ -11,6 +11,7 @@ Phone B sends encrypted traffic through a relay to Phone A, which opens the real
 | `protocol/` | Shared packet envelope used by core and relay |
 | `relay/` | Go relay and control API |
 | `core/` | Go engine: WireGuard, gateway, client, transport |
+| `core/integrationtest/` | Test-only end-to-end WireGuard and relay tests |
 | `android/` | Kotlin: VpnService, foreground service, Keystore, native module |
 | `app/` | Expo (React Native) UI |
 | `scripts/` | Build, deploy and test helpers |
