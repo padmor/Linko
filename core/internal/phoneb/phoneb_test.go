@@ -1,8 +1,6 @@
 package phoneb
 
 import (
-	"errors"
-	"fmt"
 	"net"
 	"net/netip"
 	"strconv"
@@ -212,18 +210,21 @@ func handshakeRecorded(state string) bool {
 		if !ok {
 			continue
 		}
-		var err error
+
 		switch key {
 		case "last_handshake_time_sec":
-			seconds, err = strconv.ParseInt(value, 10, 64)
+			parsed, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return false
+			}
+			seconds = parsed
 		case "last_handshake_time_nsec":
-			nanoseconds, err = strconv.ParseInt(value, 10, 64)
-		}
-		if err != nil && !errors.Is(err, strconv.ErrSyntax) {
-			return false
+			parsed, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return false
+			}
+			nanoseconds = parsed
 		}
 	}
 	return seconds > 0 || nanoseconds > 0
 }
-
-var _ = fmt.Sprintf
