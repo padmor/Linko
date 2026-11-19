@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/netip"
 	"testing"
 	"time"
 )
@@ -18,6 +19,11 @@ const payloadSize = 8 << 20 // 8 MiB
 // loopback addresses as martians.
 func TestTunnelCarriesTraffic(t *testing.T) {
 	host := localAddr(t)
+	testDestination, err := netip.ParseAddr(host)
+	if err != nil {
+		t.Fatalf("parse local test destination: %v", err)
+	}
+
 	ln, err := net.Listen("tcp", net.JoinHostPort(host, "0"))
 	if err != nil {
 		t.Skipf("cannot listen on %s: %v", host, err)
@@ -31,12 +37,12 @@ func TestTunnelCarriesTraffic(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	rep, err := Run(ctx, Options{
+	rep, err := run(ctx, Options{
 		URL:        "http://" + ln.Addr().String() + "/",
 		MTU:        1400,
 		Port:       51899,
 		SkipDirect: true,
-	})
+	}, testDestination)
 	if err != nil {
 		t.Fatalf("run: %v", err)
 	}
