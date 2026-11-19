@@ -14,6 +14,8 @@ import (
 //
 // Keep this list explicit instead of relying only on IsGlobalUnicast, which
 // also returns true for several non-public ranges (including RFC 1918).
+var ipv6GlobalUnicastPrefix = netip.MustParsePrefix("2000::/3")
+
 var blockedDestinationPrefixes = mustParsePrefixes([]string{
 	// IPv4 special-use and non-public ranges.
 	"0.0.0.0/8",       // this network
@@ -81,7 +83,7 @@ func validateDestination(addr netip.Addr) error {
 	// Only the currently allocated IPv6 global-unicast space is accepted.
 	// This also rejects IPv6 transition and future special-purpose space unless
 	// it is explicitly reviewed and added later.
-	if addr.Is6() && !netip.MustParsePrefix("2000::/3").Contains(addr) {
+	if addr.Is6() && !ipv6GlobalUnicastPrefix.Contains(addr) {
 		return fmt.Errorf("destination %s is outside IPv6 global-unicast space", addr)
 	}
 
