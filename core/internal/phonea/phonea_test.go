@@ -1,10 +1,10 @@
 package phonea
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/netip"
+	"sync"
 	"strconv"
 	"strings"
 	"testing"
@@ -13,8 +13,6 @@ import (
 	"github.com/padmor/linko/core/internal/relaybind"
 	"github.com/padmor/linko/core/internal/tunnel"
 	"github.com/padmor/linko/protocol/envelope"
-	"github.com/padmor/linko/relay/server"
-	"github.com/padmor/linko/relay/session"
 	"golang.zx2c4.com/wireguard/device"
 	"golang.zx2c4.com/wireguard/tun/tuntest"
 )
@@ -25,44 +23,17 @@ const (
 )
 
 func TestStartCompletesRelayHandshakeAndCloses(t *testing.T) {
-	relaySocket, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 0})
-	if err != nil {
-		t.Fatalf("listen for relay: %v", err)
-	}
-
 	tokenA, err := envelope.NewSessionID()
 	if err != nil {
-		relaySocket.Close()
 		t.Fatalf("create Phone A session: %v", err)
 	}
 	tokenB, err := envelope.NewSessionID()
 	if err != nil {
-		relaySocket.Close()
 		t.Fatalf("create Phone B session: %v", err)
 	}
-	table := session.NewTable(120 * time.Second)
-	if err := table.Add(tokenA, tokenB); err != nil {
-		relaySocket.Close()
-		t.Fatalf("register paired sessions: %v", err)
-	}
+	relayAddress, stopRelay := startTestRelay(t, tokenA, tokenB)
+	t.Cleanup(stopRelay)
 
-	relay := server.New(relaySocket, table)
-	ctx, cancel := context.WithCancel(context.Background())
-	relayDone := make(chan error, 1)
-	go func() { relayDone <- relay.Serve(ctx) }()
-	t.Cleanup(func() {
-		cancel()
-		select {
-		case err := <-relayDone:
-			if err != nil {
-				t.Errorf("stop relay: %v", err)
-			}
-		case <-time.After(3 * time.Second):
-			t.Error("relay did not stop after cancellation")
-		}
-	})
-
-	relayAddress := relaySocket.LocalAddr().String()
 	privateA, publicA, err := tunnel.NewKeyPair()
 	if err != nil {
 		t.Fatalf("create Phone A keys: %v", err)
@@ -129,11 +100,60 @@ func TestStartRejectsInvalidConfiguration(t *testing.T) {
 		RelayAddress:  "127.0.0.1:51820",
 		LocalAddress:  netip.MustParseAddr(testLocalAddress),
 		PeerAddress:   netip.MustParseAddr(testPeerAddress),
-		MTU:           1280,
+		MTU:           0,
 	}
-	cfg.MTU = 0
 	if _, err := Start(cfg); err == nil {
 		t.Fatal("Start accepted an invalid MTU")
+	}
+}
+
+func startTestRelay(t *testing.T, tokenA, tokenB envelope.SessionID) (string, func()) {
+	t.Helper()
+	socket, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 0})
+	if err != nil {
+		t.Fatalf("listen for test relay: %v", err)
+	}
+
+	addresses := make(map[envelope.SessionID]*net.UDPAddr, 2)
+	var mu sync.Mutex
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		buffer := make([]byte, 65535)
+		for {
+			n, source, err := socket.ReadFromUDP(buffer)
+			if err != nil {
+				return
+			}
+			packet, err := envelope.Parse(buffer[:n])
+			if err != nil {
+				continue
+			}
+
+			mu.Lock()
+			addresses[packet.Session] = source
+			var destination *net.UDPAddr
+			switch packet.Session {
+			case tokenA:
+				destination = addresses[tokenB]
+			case tokenB:
+				destination = addresses[tokenA]
+			}
+			mu.Unlock()
+
+			if packet.Type == envelope.TypeData && destination != nil {
+				_, _ = socket.WriteToUDP(buffer[:n], destination)
+			}
+		}
+	}()
+
+	return socket.LocalAddr().String(), func() {
+		_ = socket.Close()
+		select {
+		case <-done:
+		case <-time.After(2 * time.Second):
+			t.Error("test relay did not stop")
+		}
 	}
 }
 
