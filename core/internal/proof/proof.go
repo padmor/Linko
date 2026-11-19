@@ -46,6 +46,12 @@ type Report struct {
 // Run starts both ends, downloads Options.URL through the tunnel and, unless
 // skipped, directly, then returns the measurements.
 func Run(ctx context.Context, opt Options) (Report, error) {
+	return run(ctx, opt, netip.Addr{})
+}
+
+// run is shared by the CLI proof and the local test. Only the test supplies
+// an exact private host address so its local HTTP server can be reached.
+func run(ctx context.Context, opt Options, proofDestination netip.Addr) (Report, error) {
 	gwKey, gwPub, err := tunnel.NewKeyPair()
 	if err != nil {
 		return Report{}, err
@@ -70,7 +76,12 @@ func Run(ctx context.Context, opt Options) (Report, error) {
 	}
 	defer closeDevice(gwDev)
 
-	gw, err := gateway.New(stack)
+	var gw *gateway.Gateway
+	if proofDestination.IsValid() {
+		gw, err = gateway.NewForProof(stack, proofDestination)
+	} else {
+		gw, err = gateway.New(stack)
+	}
 	if err != nil {
 		return Report{}, err
 	}
