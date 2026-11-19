@@ -23,13 +23,13 @@ const (
 
 // Config contains the values Phone A needs to join one paired tunnel.
 type Config struct {
-	PrivateKey      tunnel.Key
-	PeerPublicKey   tunnel.Key
-	Session         envelope.SessionID
-	RelayAddress    string
-	LocalAddress    netip.Addr
-	PeerAddress     netip.Addr
-	MTU             int
+	PrivateKey    tunnel.Key
+	PeerPublicKey tunnel.Key
+	Session       envelope.SessionID
+	RelayAddress  string
+	LocalAddress  netip.Addr
+	PeerAddress   netip.Addr
+	MTU           int
 }
 
 // PhoneA owns the WireGuard device and the gateway forwarding its decrypted traffic.
@@ -40,9 +40,19 @@ type PhoneA struct {
 	closed  bool
 }
 
-// Start validates the endpoint configuration, starts the gateway, and connects
-// Phone A to its peer through the configured Linko relay.
+// Start validates the endpoint configuration, starts the strict gateway, and
+// connects Phone A to its peer through the configured Linko relay.
 func Start(cfg Config) (*PhoneA, error) {
+	return start(cfg, netip.Addr{})
+}
+
+// startForProof is available only to tests in this package. It permits exactly
+// one private destination for a local test server; runtime Start remains strict.
+func startForProof(cfg Config, allowedDestination netip.Addr) (*PhoneA, error) {
+	return start(cfg, allowedDestination)
+}
+
+func start(cfg Config, proofDestination netip.Addr) (*PhoneA, error) {
 	if err := validateConfig(cfg); err != nil {
 		return nil, err
 	}
@@ -52,7 +62,12 @@ func Start(cfg Config) (*PhoneA, error) {
 		return nil, fmt.Errorf("phonea: create gateway TUN: %w", err)
 	}
 
-	gw, err := gateway.New(stack)
+	var gw *gateway.Gateway
+	if proofDestination.IsValid() {
+		gw, err = gateway.NewForProof(stack, proofDestination)
+	} else {
+		gw, err = gateway.New(stack)
+	}
 	if err != nil {
 		_ = tunDevice.Close()
 		return nil, fmt.Errorf("phonea: start gateway: %w", err)
