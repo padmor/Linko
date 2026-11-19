@@ -99,7 +99,7 @@ func TestPhoneBLoadsHTTPSPageThroughPhoneA(t *testing.T) {
 	transport := phoneB.HTTPClient().Transport.(*http.Transport).Clone()
 	transport.TLSClientConfig = &tls.Config{
 		RootCAs:    roots,
-		ServerName: "localhost",
+		ServerName: "example.com",
 		MinVersion: tls.VersionTLS12,
 	}
 	httpClient.Transport = transport
