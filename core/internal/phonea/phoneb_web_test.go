@@ -128,7 +128,7 @@ func TestPhoneBLoadsHTTPSPageThroughPhoneA(t *testing.T) {
 	if string(body) != phoneBPage {
 		t.Fatalf("unexpected page response: got %q, want %q", body, phoneBPage)
 	}
-	t.Logf("Phone B loaded the HTTPS page through Phone A: %s (%d bytes)", response.URL, len(body))
+	t.Logf("Phone B loaded the HTTPS page through Phone A: %s (%d bytes)", request.URL, len(body))
 }
 
 // localPrivateIPv4 selects an address that the test server can bind to and
