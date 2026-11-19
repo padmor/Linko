@@ -75,8 +75,9 @@ func Start(cfg Config) (*PhoneA, error) {
 		},
 	}, "phone-a", bind)
 	if err != nil {
+		// UpWithBind closes the WireGuard device, which also closes tunDevice
+		// when setup fails after the device has been created.
 		gw.Close()
-		_ = tunDevice.Close()
 		return nil, fmt.Errorf("phonea: start WireGuard: %w", err)
 	}
 
