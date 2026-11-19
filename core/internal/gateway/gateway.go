@@ -1,10 +1,11 @@
 // Package gateway is the exit side of Linko (Phone A).
 //
 // Packets from Phone B arrive decrypted in a gVisor stack. For every new TCP
-// connection or UDP flow the stack reports, the gateway opens a real socket to
-// the same destination and copies bytes both ways. The stack sees every
-// destination because it runs in promiscuous mode and may spoof source
-// addresses (it answers as the server the client thinks it is talking to).
+// connection or UDP flow the gateway opens a real socket to the same
+// destination after applying the destination policy, then copies bytes both
+// ways. The stack sees every destination because it runs in promiscuous mode
+// and may spoof source addresses (it answers as the server the client thinks
+// it is talking to).
 package gateway
 
 import (
@@ -95,6 +96,12 @@ func (g *Gateway) onTCP(req *tcp.ForwarderRequest) {
 }
 
 func (g *Gateway) serveTCP(req *tcp.ForwarderRequest) {
+	// Reject private and special-use destinations before opening a real socket.
+	if err := validateDestinationString(req.ID().LocalAddress.String()); err != nil {
+		req.Complete(true)
+		return
+	}
+
 	// Reach the real server first, so a failed dial resets the client at once
 	// instead of leaving it with a connection that dies silently.
 	upstream, err := g.dialer.DialContext(g.ctx, "tcp", destination(req.ID()))
@@ -158,6 +165,11 @@ func (g *Gateway) onUDP(req *udp.ForwarderRequest) {
 }
 
 func (g *Gateway) serveUDP(req *udp.ForwarderRequest) {
+	// Apply the same policy as TCP before opening a real socket.
+	if err := validateDestinationString(req.ID().LocalAddress.String()); err != nil {
+		return
+	}
+
 	upstream, err := g.dialer.DialContext(g.ctx, "udp", destination(req.ID()))
 	if err != nil {
 		return
