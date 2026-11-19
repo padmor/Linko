@@ -123,7 +123,7 @@ func TestPhoneBLoadsHTTPSPageThroughPhoneA(t *testing.T) {
 		t.Fatalf("read page response: %v", err)
 	}
 	if response.StatusCode != http.StatusOK {
-		t.Fatalf("page returned %s, want %s: %s", response.Status, http.StatusOK, body)
+		t.Fatalf("page returned %s, want HTTP status %d: %s", response.Status, http.StatusOK, body)
 	}
 	if string(body) != phoneBPage {
 		t.Fatalf("unexpected page response: got %q, want %q", body, phoneBPage)
