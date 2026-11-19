@@ -27,6 +27,16 @@ jobs:
           go-version-file: ${{ matrix.module }}/go.mod
           cache: false
 
+      - name: Resolve integration test dependencies
+        if: matrix.module == 'core/integrationtest'
+        working-directory: core/integrationtest
+        run: |
+          go mod tidy
+          echo '--- integrationtest go.mod ---'
+          cat go.mod
+          echo '--- integrationtest go.sum ---'
+          cat go.sum
+
       - name: Run tests with race detector
         working-directory: ${{ matrix.module }}
         run: go test -race ./...
