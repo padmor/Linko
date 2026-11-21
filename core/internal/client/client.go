@@ -32,7 +32,7 @@ func New(cfg tunnel.Config, local, dns netip.Addr, mtu int) (*Client, error) {
 	}
 	dev, err := tunnel.Up(tdev, cfg, "client")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("client: start WireGuard: %w", err)
 	}
 	return &Client{dev: dev, net: tnet}, nil
 }
