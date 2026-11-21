@@ -99,6 +99,15 @@ func start(cfg Config, proofDestination netip.Addr) (*PhoneA, error) {
 	return &PhoneA{device: dev, gateway: gw}, nil
 }
 
+// GatewayStats returns a safe snapshot of Phone A's forwarding diagnostics.
+// It does not expose destinations, session tokens, keys or packet contents.
+func (p *PhoneA) GatewayStats() gateway.Stats {
+	if p == nil || p.gateway == nil {
+		return gateway.Stats{}
+	}
+	return p.gateway.Stats()
+}
+
 // Close stops forwarding before closing WireGuard and its TUN device.
 // It is safe to call more than once.
 func (p *PhoneA) Close() {
