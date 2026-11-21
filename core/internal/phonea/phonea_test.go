@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/padmor/linko/core/internal/gateway"
 	"github.com/padmor/linko/core/internal/relaybind"
 	"github.com/padmor/linko/core/internal/tunnel"
 	"github.com/padmor/linko/protocol/envelope"
@@ -79,6 +80,9 @@ func TestStartCompletesRelayHandshakeAndCloses(t *testing.T) {
 	t.Cleanup(phone.Close)
 
 	waitForHandshake(t, phone.device, peer)
+	if stats := phone.GatewayStats(); stats != (gateway.Stats{}) {
+		t.Fatalf("new Phone A gateway has unexpected diagnostic counters: %+v", stats)
+	}
 	phone.Close()
 	phone.Close()
 }
