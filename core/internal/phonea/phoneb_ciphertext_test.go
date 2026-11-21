@@ -149,7 +149,7 @@ func TestRelayCaptureContainsCiphertext(t *testing.T) {
 		t.Fatal("relay captured no data datagrams")
 	}
 
-	var sawTransportData bool
+	var sawPhoneBTransportData bool
 	var joinedCapture []byte
 	for i, datagram := range datagrams {
 		packet, parseErr := envelope.Parse(datagram)
@@ -159,20 +159,24 @@ func TestRelayCaptureContainsCiphertext(t *testing.T) {
 		if packet.Type != envelope.TypeData {
 			t.Fatalf("captured datagram %d has packet type %d, want data", i, packet.Type)
 		}
+		if packet.Session != sessionA && packet.Session != sessionB {
+			t.Fatalf("captured datagram %d has an unknown sender token", i)
+		}
 		if bytes.Contains(datagram, []byte(plaintextProofMarker)) {
 			t.Fatalf("relay capture exposed the plaintext marker in datagram %d", i)
 		}
 		joinedCapture = append(joinedCapture, datagram...)
-		if len(packet.Payload) >= 4 && binary.LittleEndian.Uint32(packet.Payload[:4]) == wireGuardTransportData {
-			sawTransportData = true
+		if packet.Session == sessionB && len(packet.Payload) >= 4 &&
+			binary.LittleEndian.Uint32(packet.Payload[:4]) == wireGuardTransportData {
+			sawPhoneBTransportData = true
 		}
 	}
 
 	if bytes.Contains(joinedCapture, []byte(plaintextProofMarker)) {
 		t.Fatal("relay capture contains the plaintext marker across captured datagrams")
 	}
-	if !sawTransportData {
-		t.Fatal("relay capture contains no WireGuard encrypted transport-data packet")
+	if !sawPhoneBTransportData {
+		t.Fatal("relay capture contains no encrypted WireGuard transport-data packet from Phone B")
 	}
 
 	t.Logf("Phone A received the plaintext HTTP marker; relay captured %d WireGuard data datagrams without exposing it", len(datagrams))
