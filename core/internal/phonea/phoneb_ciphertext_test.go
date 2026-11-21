@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -268,4 +267,3 @@ func startCaptureRelay(t *testing.T, sessionA, sessionB envelope.SessionID) (str
 	return socket.LocalAddr().String(), capture, stop
 }
 
-var _ = fmt.Sprintf
