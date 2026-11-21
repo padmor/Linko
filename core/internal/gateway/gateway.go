@@ -16,6 +16,7 @@ import (
 	"net/netip"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gvisor.dev/gvisor/pkg/tcpip"
@@ -39,14 +40,33 @@ const (
 	udpMaxDatagram = 65535
 )
 
+// Stats is a point-in-time snapshot of gateway forwarding diagnostics.
+// It contains counters only; it never includes addresses, keys, tokens or payloads.
+type Stats struct {
+	BlockedDestinations uint64
+	DialFailures        uint64
+	EndpointFailures    uint64
+}
+
+type gatewayCounters struct {
+	blockedDestinations atomic.Uint64
+	dialFailures        atomic.Uint64
+	endpointFailures    atomic.Uint64
+}
+
+type contextDialer interface {
+	DialContext(ctx context.Context, network, address string) (net.Conn, error)
+}
+
 // Gateway forwards tunnel traffic to the real network.
 type Gateway struct {
 	stack            *stack.Stack
-	dialer           net.Dialer
+	dialer           contextDialer
 	ctx              context.Context
 	cancel           context.CancelFunc
 	wg               sync.WaitGroup
 	proofDestination netip.Addr
+	stats            gatewayCounters
 }
 
 // New wires the forwarders into s. Call Close to stop all flows.
@@ -67,7 +87,7 @@ func newGateway(s *stack.Stack, proofDestination netip.Addr) (*Gateway, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	g := &Gateway{
 		stack:            s,
-		dialer:           net.Dialer{Timeout: dialTimeout},
+		dialer:           &net.Dialer{Timeout: dialTimeout},
 		ctx:              ctx,
 		cancel:           cancel,
 		proofDestination: proofDestination,
@@ -92,6 +112,15 @@ func newGateway(s *stack.Stack, proofDestination netip.Addr) (*Gateway, error) {
 	return g, nil
 }
 
+// Stats returns a race-safe snapshot of forwarding diagnostics.
+func (g *Gateway) Stats() Stats {
+	return Stats{
+		BlockedDestinations: g.stats.blockedDestinations.Load(),
+		DialFailures:        g.stats.dialFailures.Load(),
+		EndpointFailures:    g.stats.endpointFailures.Load(),
+	}
+}
+
 // Close stops every flow and waits for the copy loops to end.
 func (g *Gateway) Close() {
 	g.cancel()
@@ -103,13 +132,28 @@ func (g *Gateway) Close() {
 func (g *Gateway) checkDestination(value string) error {
 	addr, err := netip.ParseAddr(value)
 	if err != nil {
+		g.stats.blockedDestinations.Add(1)
 		return fmt.Errorf("invalid destination address %q: %w", value, err)
 	}
 	addr = addr.Unmap()
 	if g.proofDestination.IsValid() && addr == g.proofDestination {
 		return nil
 	}
-	return validateDestination(addr)
+	if err := validateDestination(addr); err != nil {
+		g.stats.blockedDestinations.Add(1)
+		return err
+	}
+	return nil
+}
+
+// dialContext records failed upstream connection attempts without logging
+// destination addresses or any request data.
+func (g *Gateway) dialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	conn, err := g.dialer.DialContext(ctx, network, address)
+	if err != nil {
+		g.stats.dialFailures.Add(1)
+	}
+	return conn, err
 }
 
 // destination returns the "ip:port" the client was trying to reach.
@@ -135,7 +179,7 @@ func (g *Gateway) serveTCP(req *tcp.ForwarderRequest) {
 
 	// Reach the real server first, so a failed dial resets the client at once
 	// instead of leaving it with a connection that dies silently.
-	upstream, err := g.dialer.DialContext(g.ctx, "tcp", destination(req.ID()))
+	upstream, err := g.dialContext(g.ctx, "tcp", destination(req.ID()))
 	if err != nil {
 		req.Complete(true)
 		return
@@ -145,6 +189,7 @@ func (g *Gateway) serveTCP(req *tcp.ForwarderRequest) {
 	var wq waiter.Queue
 	ep, tcpErr := req.CreateEndpoint(&wq)
 	if tcpErr != nil {
+		g.stats.endpointFailures.Add(1)
 		req.Complete(true)
 		return
 	}
@@ -201,7 +246,7 @@ func (g *Gateway) serveUDP(req *udp.ForwarderRequest) {
 		return
 	}
 
-	upstream, err := g.dialer.DialContext(g.ctx, "udp", destination(req.ID()))
+	upstream, err := g.dialContext(g.ctx, "udp", destination(req.ID()))
 	if err != nil {
 		return
 	}
@@ -210,6 +255,7 @@ func (g *Gateway) serveUDP(req *udp.ForwarderRequest) {
 	var wq waiter.Queue
 	ep, tcpErr := req.CreateEndpoint(&wq)
 	if tcpErr != nil {
+		g.stats.endpointFailures.Add(1)
 		return
 	}
 	client := gonet.NewUDPConn(&wq, ep)
