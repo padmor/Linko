@@ -39,5 +39,8 @@ jobs:
         with:
           gradle-version: "8.14.3"
 
+      - name: Run gateway unit tests
+        run: gradle -p android :gateway:testDebugUnitTest
+
       - name: Assemble gateway library
         run: gradle -p android :gateway:assembleDebug
