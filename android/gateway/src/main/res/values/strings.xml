@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gateway_channel_name">Internet sharing</string>
+    <string name="gateway_channel_description">Status and controls for an active Linko internet-sharing session.</string>
+    <string name="gateway_notification_title">Linko internet sharing</string>
+    <string name="gateway_notification_starting">Starting secure gateway…</string>
+    <string name="gateway_notification_active">Sharing internet with your paired device.</string>
+    <string name="gateway_notification_stop">Stop sharing</string>
+</resources>

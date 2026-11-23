@@ -1,0 +1,43 @@
+name: Android gateway
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android/**"
+      - ".github/workflows/android-gateway.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "android/**"
+      - ".github/workflows/android-gateway.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Android gateway
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "platforms;android-35"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: "8.14.3"
+
+      - name: Assemble gateway library
+        run: gradle -p android :gateway:assembleDebug
