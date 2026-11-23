@@ -27,16 +27,6 @@ jobs:
           go-version-file: ${{ matrix.module }}/go.mod
           cache: false
 
-      - name: Resolve gomobile dependencies
-        if: matrix.module == 'core/mobile'
-        working-directory: ${{ matrix.module }}
-        run: |
-          go mod tidy
-          echo "===== MOBILE_GO_MOD ====="
-          cat go.mod
-          echo "===== MOBILE_GO_SUM ====="
-          cat go.sum
-
       - name: Run tests with race detector
         working-directory: ${{ matrix.module }}
         run: go test -race ./...
