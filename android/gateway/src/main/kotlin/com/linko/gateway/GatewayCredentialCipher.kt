@@ -103,7 +103,7 @@ internal class AesGcmCredentialCipher(
         private const val TRANSFORMATION = "AES/GCM/NoPadding"
         private const val NONCE_SIZE_BYTES = 12
         private const val GCM_TAG_SIZE_BYTES = 16
-        private const val MAX_ENVELOPE_BYTES =
+        private val MAX_ENVELOPE_BYTES =
             GatewayCredentialCodec.MAX_PLAINTEXT_BYTES + HEADER.size +
                 NONCE_SIZE_BYTES + GCM_TAG_SIZE_BYTES
 
