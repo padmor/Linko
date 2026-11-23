@@ -27,6 +27,14 @@ jobs:
           go-version-file: ${{ matrix.module }}/go.mod
           cache: false
 
+      - name: Verify Android gomobile binding
+        if: matrix.module == 'core/mobile'
+        working-directory: ${{ matrix.module }}
+        run: |
+          go install golang.org/x/mobile/cmd/gobind@v0.0.0-20261117202452-47699113848a
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          go tool gomobile bind -target=android/arm64 -o "$RUNNER_TEMP/linko.aar" .
+
       - name: Run tests with race detector
         working-directory: ${{ matrix.module }}
         run: go test -race ./...
