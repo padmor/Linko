@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [core, relay, protocol, core/integrationtest]
+        module: [core, relay, protocol, core/integrationtest, core/mobile]
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
