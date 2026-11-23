@@ -13,3 +13,4 @@ require (
 )
 
 replace github.com/padmor/linko/core => ..
+replace github.com/padmor/linko/protocol => ../../protocol
