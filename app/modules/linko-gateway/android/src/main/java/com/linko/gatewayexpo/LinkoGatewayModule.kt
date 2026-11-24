@@ -3,28 +3,15 @@ package com.linko.gatewayexpo
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import com.linko.gateway.GatewayServiceController
+import expo.modules.interfaces.permissions.PermissionsStatus
 import expo.modules.kotlin.Promise
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 class LinkoGatewayModule : Module() {
-  private var permissionPromise: Promise? = null
-  private lateinit var notificationPermissionLauncher: ActivityResultLauncher<String>
-
   override fun definition() = ModuleDefinition {
     Name("LinkoGateway")
-
-    RegisterActivityContracts {
-      notificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-      ) { _, granted ->
-        permissionPromise?.resolve(granted)
-        permissionPromise = null
-      }
-    }
 
     AsyncFunction("requestNotificationPermission") { promise: Promise ->
       val context = appContext.reactContext
@@ -39,17 +26,14 @@ class LinkoGatewayModule : Module() {
         return@AsyncFunction
       }
 
-      if (permissionPromise != null) {
-        promise.reject(
-          "E_PERMISSION_PENDING",
-          "A notification permission request is already active",
-          null
-        )
-        return@AsyncFunction
-      }
+      val permissions = appContext.permissions
+        ?: throw IllegalStateException("Expo permissions module is unavailable")
 
-      permissionPromise = promise
-      notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+      permissions.askForPermissions({ permissionResults ->
+        val granted = permissionResults[Manifest.permission.POST_NOTIFICATIONS]?.status ==
+          PermissionsStatus.GRANTED
+        promise.resolve(granted)
+      }, Manifest.permission.POST_NOTIFICATIONS)
     }
 
     Function("startSharing") {
