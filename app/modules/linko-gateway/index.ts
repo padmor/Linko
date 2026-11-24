@@ -10,4 +10,20 @@ interface LinkoGatewayNativeModule {
   stopSharing(): void;
 }
 
-export default requireNativeModule<LinkoGatewayNativeModule>("LinkoGateway");
+const nativeGateway =
+  requireNativeModule<LinkoGatewayNativeModule>("LinkoGateway");
+
+export async function startSharing(): Promise<GatewayStartResult | "PERMISSION_DENIED"> {
+  const permissionGranted =
+    await nativeGateway.requestNotificationPermission();
+
+  if (!permissionGranted) {
+    return "PERMISSION_DENIED";
+  }
+
+  return nativeGateway.startSharing();
+}
+
+export function stopSharing(): void {
+  nativeGateway.stopSharing();
+}
