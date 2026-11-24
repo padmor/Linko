@@ -12,4 +12,5 @@ android {
 
 dependencies {
   implementation project(':gateway')
+  implementation 'androidx.activity:activity-ktx:1.10.1'
 }
