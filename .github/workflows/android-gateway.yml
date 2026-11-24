@@ -76,7 +76,7 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
-          packages: "platforms;android-37"
+          packages: "platforms;android-35"
 
       - name: Assemble Expo app
         working-directory: app/android
