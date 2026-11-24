@@ -3,6 +3,7 @@ package com.linko.gatewayexpo
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import com.linko.gateway.GatewayServiceController
 import expo.modules.kotlin.Promise
@@ -11,6 +12,7 @@ import expo.modules.kotlin.modules.ModuleDefinition
 
 class LinkoGatewayModule : Module() {
   private var permissionPromise: Promise? = null
+  private lateinit var notificationPermissionLauncher: ActivityResultLauncher<String>
 
   override fun definition() = ModuleDefinition {
     Name("LinkoGateway")
@@ -18,7 +20,7 @@ class LinkoGatewayModule : Module() {
     RegisterActivityContracts {
       notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-      ) { granted ->
+      ) { _, granted ->
         permissionPromise?.resolve(granted)
         permissionPromise = null
       }
@@ -28,7 +30,8 @@ class LinkoGatewayModule : Module() {
       val context = appContext.reactContext
         ?: throw IllegalStateException("Linko app context is unavailable")
 
-      if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+      if (
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
         context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
         PackageManager.PERMISSION_GRANTED
       ) {
@@ -37,7 +40,11 @@ class LinkoGatewayModule : Module() {
       }
 
       if (permissionPromise != null) {
-        promise.reject("E_PERMISSION_PENDING", "A notification permission request is already active", null)
+        promise.reject(
+          "E_PERMISSION_PENDING",
+          "A notification permission request is already active",
+          null
+        )
         return@AsyncFunction
       }
 
@@ -59,7 +66,4 @@ class LinkoGatewayModule : Module() {
       GatewayServiceController.stopSharing(context)
     }
   }
-
-  private lateinit var notificationPermissionLauncher:
-    androidx.activity.result.ActivityResultLauncher<String>
 }
