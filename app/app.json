@@ -6,11 +6,11 @@
     "orientation": "portrait",
     "scheme": "linko",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "android": {
       "package": "com.linko.app"
     },
     "plugins": [
+      "expo-build-properties",
       "./plugins/withLinkoGateway"
     ]
   }
