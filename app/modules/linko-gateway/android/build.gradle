@@ -1,0 +1,15 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.linko.gatewayexpo'
+version = '1.0.0'
+
+android {
+  namespace "com.linko.gatewayexpo"
+}
+
+dependencies {
+  implementation project(':gateway')
+}
