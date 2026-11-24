@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Linko",
+    "slug": "linko",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "linko",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "android": {
+      "package": "com.linko.app"
+    },
+    "plugins": [
+      "./plugins/withLinkoGateway"
+    ]
+  }
+}
