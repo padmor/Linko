@@ -7,7 +7,7 @@ const {
 const GATEWAY_INCLUDE = "include ':gateway'\nproject(':gateway').projectDir = new File(rootProject.projectDir, '../../android/gateway')";
 const MOBILE_REPOSITORY_BLOCK =
   "allprojects { repositories { maven { url uri(new File(rootProject.projectDir, '../../android/mobile-repo')) } } }";
-const MOBILE_DEPENDENCY = 'implementation "com.linko.mobile:mobile:0.1.0"';
+const MOBILE_DEPENDENCY = 'implementation "com.linko.mobile:mobile:0.1.1"';
 
 function withGatewayProject(config) {
   config = withSettingsGradle(config, (mod) => {
