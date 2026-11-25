@@ -12,7 +12,7 @@ function withGatewayProject(config) {
 
     if (!mod.modResults.contents.includes(MOBILE_REPOSITORY)) {
       const repositoriesBlock =
-        /(dependencyResolutionManagement\\s*\\{[\\s\\S]*?repositories\\s*\\{)/;
+        /(dependencyResolutionManagement\s*\{[\s\S]*?repositories\s*\{)/;
 
       if (!repositoriesBlock.test(mod.modResults.contents)) {
         throw new Error(
@@ -38,7 +38,7 @@ function withGatewayProject(config) {
     for (const dependency of dependencies) {
       if (!mod.modResults.contents.includes(dependency)) {
         mod.modResults.contents = mod.modResults.contents.replace(
-          /dependencies\\s*\\{/,
+          /dependencies\s*\{/,
           (match) => `${match}\n    ${dependency}`
         );
       }
