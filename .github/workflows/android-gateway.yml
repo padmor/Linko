@@ -44,7 +44,7 @@ jobs:
       - name: Set up Android SDK and NDK
         uses: android-actions/setup-android@v4
         with:
-          packages: "platforms;android-35;ndk;27.2.12479018"
+          packages: "platforms;android-35 ndk;27.2.12479018"
 
       - name: Configure Android NDK
         run: echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
@@ -98,7 +98,7 @@ jobs:
       - name: Set up Android SDK and NDK
         uses: android-actions/setup-android@v4
         with:
-          packages: "platforms;android-35;ndk;27.2.12479018"
+          packages: "platforms;android-35 ndk;27.2.12479018"
 
       - name: Configure Android NDK
         run: echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
