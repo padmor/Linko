@@ -41,10 +41,13 @@ jobs:
           go-version-file: core/mobile/go.mod
           cache: false
 
-      - name: Set up Android SDK and NDK
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
-          packages: "platforms;android-35 ndk;27.2.12479018"
+          packages: "platforms;android-35"
+
+      - name: Install Android NDK
+        run: sdkmanager "ndk;27.2.12479018"
 
       - name: Configure Android NDK
         run: echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
@@ -95,10 +98,13 @@ jobs:
           go-version-file: core/mobile/go.mod
           cache: false
 
-      - name: Set up Android SDK and NDK
+      - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
-          packages: "platforms;android-35 ndk;27.2.12479018"
+          packages: "platforms;android-35"
+
+      - name: Install Android NDK
+        run: sdkmanager "ndk;27.2.12479018"
 
       - name: Configure Android NDK
         run: echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
