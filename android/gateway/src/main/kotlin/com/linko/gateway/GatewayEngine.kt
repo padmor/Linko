@@ -5,34 +5,28 @@ import android.content.Context
 /**
  * Platform-neutral lifecycle boundary for the Phone A Go gateway.
  *
- * The Android service owns this instance. The implementation that creates the
- * Go mobile binding will be installed by the app after secure session material
- * is available.
+ * The Android service owns this instance. Android-specific lifecycle and key
+ * storage stay in Kotlin; tunnel and forwarding behavior remain in Go.
  */
 interface GatewayEngine {
     @Throws(Exception::class)
     fun start()
 
-    /**
-     * Stops the gateway and releases its resources. Implementations must be
-     * safe to call more than once.
-     */
+    /** Stops the gateway and releases its resources. Safe to call more than once. */
     fun stop()
 }
 
 /**
  * Creates an engine for an already approved session.
  *
- * The factory must obtain secrets from the secure session layer rather than
+ * Factories must obtain secrets from the secure session layer rather than
  * accepting private keys or session secrets through Android service intents.
  */
 fun interface GatewayEngineFactory {
     fun create(applicationContext: Context): GatewayEngine
 }
 
-/**
- * App-level registration point for the Android-to-Go gateway adapter.
- */
+/** App-level registration point for the Android-to-Go gateway adapter. */
 object GatewayEngineRegistry {
     @Volatile
     private var factory: GatewayEngineFactory? = null
@@ -43,6 +37,14 @@ object GatewayEngineRegistry {
             "The Linko gateway engine factory is already installed"
         }
         this.factory = factory
+    }
+
+    /** Installs the production engine only when no test/custom factory exists. */
+    @Synchronized
+    fun installIfAbsent(factory: GatewayEngineFactory) {
+        if (this.factory == null) {
+            this.factory = factory
+        }
     }
 
     internal fun create(context: Context): GatewayEngine {
