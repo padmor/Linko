@@ -6,6 +6,8 @@ type GatewayStartResult =
 
 interface LinkoGatewayNativeModule {
   requestNotificationPermission(): Promise<boolean>;
+  isBatteryOptimizationExempt(): boolean;
+  openBatteryOptimizationSettings(): void;
   startSharing(): GatewayStartResult;
   stopSharing(): void;
 }
@@ -22,6 +24,14 @@ export async function startSharing(): Promise<GatewayStartResult | "PERMISSION_D
   }
 
   return nativeGateway.startSharing();
+}
+
+export function isBatteryOptimizationExempt(): boolean {
+  return nativeGateway.isBatteryOptimizationExempt();
+}
+
+export function openBatteryOptimizationSettings(): void {
+  nativeGateway.openBatteryOptimizationSettings();
 }
 
 export function stopSharing(): void {
