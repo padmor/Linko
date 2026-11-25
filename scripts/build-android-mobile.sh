@@ -41,7 +41,7 @@ mkdir -p "$ARTIFACT_DIR"
   go tool gomobile bind \
     -androidapi=26 \
     -target=android/arm64 \
-    -javapkg=com.linko.mobile \
+    -javapkg=com.linko \
     -o "$ARTIFACT_FILE" \
     .
 )
