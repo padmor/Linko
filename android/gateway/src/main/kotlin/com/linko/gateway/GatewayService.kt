@@ -14,9 +14,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 /**
  * Owns the foreground lifetime of a Phone A gateway session.
  *
- * Session secrets are deliberately not accepted in Intent extras. The
- * registered GatewayEngineFactory is responsible for resolving an approved
- * session through the secure app layer.
+ * Session secrets are deliberately not accepted in Intent extras. The engine
+ * reads an approved session from the encrypted credential store.
  */
 class GatewayService : Service() {
     private val gatewayExecutor = Executors.newSingleThreadExecutor { task ->
@@ -27,6 +26,11 @@ class GatewayService : Service() {
 
     // Accessed only on gatewayExecutor.
     private var activeGateway: GatewayEngine? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        GatewayEngineRegistry.installIfAbsent(GoGatewayEngineFactory())
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
