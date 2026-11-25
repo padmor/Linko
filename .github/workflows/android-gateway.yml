@@ -5,12 +5,16 @@ on:
     branches: [main]
     paths:
       - "android/**"
+      - "core/mobile/**"
+      - "scripts/build-android-mobile.sh"
       - "app/**"
       - ".github/workflows/android-gateway.yml"
   pull_request:
     branches: [main]
     paths:
       - "android/**"
+      - "core/mobile/**"
+      - "scripts/build-android-mobile.sh"
       - "app/**"
       - ".github/workflows/android-gateway.yml"
 
@@ -31,10 +35,22 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: core/mobile/go.mod
+          cache: false
+
+      - name: Set up Android SDK and NDK
         uses: android-actions/setup-android@v4
         with:
-          packages: "platforms;android-35"
+          packages: "platforms;android-35;ndk;27.2.12479018"
+
+      - name: Configure Android NDK
+        run: echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+
+      - name: Build Go Android binding
+        run: bash scripts/build-android-mobile.sh
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
@@ -73,10 +89,22 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Android SDK
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: core/mobile/go.mod
+          cache: false
+
+      - name: Set up Android SDK and NDK
         uses: android-actions/setup-android@v4
         with:
-          packages: "platforms;android-35"
+          packages: "platforms;android-35;ndk;27.2.12479018"
+
+      - name: Configure Android NDK
+        run: echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+
+      - name: Build Go Android binding
+        run: bash scripts/build-android-mobile.sh
 
       - name: Assemble Expo app
         working-directory: app/android
